@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>拉米的小歌單</title>
+  <style>
+    :root{
+      --bg:#0b0e14; --card:#121826; --muted:#9db2ce; --ink:#e6edf7; --acc:#a78bfa;
+      --card-h:160px;           /* 歌曲卡片固定高度（所有頁面統一） */
+      --wrap-w:1100px;
+      --header-pad-y: 42px;   /* header 上下內距（原 18px） */
+      --title-nav-gap: 26px;  /* 標題與按鈕間距（原 10px） */
+      --bg-url: url("lamilan.png");
+      --bg-blur: 0px;     /* 模糊強度 */
+      --bg-dim : 0.35;
+    }
+    *{box-sizing:border-box}
+body{
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body::before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  background-image: var(--bg-url);
+  background-size: cover;
+  background-position: center;
+  filter: blur(var(--bg-blur)) saturate(110%);
+  transform: scale(1.06);       /* 模糊會吃到邊，稍微放大補邊 */
+  z-index: -2;
+  pointer-events: none;         /* 不擋互動 */
+}
+
+/* 暗化層：純色 + 漸層，讓中間更聚焦、邊緣更暗 */
+body::after{
+  content:"";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(1200px 600px at 50% 20%, rgba(0,0,0,0) 0%, rgba(0,0,0,.35) 70%, rgba(0,0,0,.65) 100%),
+    rgba(0,0,0, var(--bg-dim));
+  z-index: -1;
+  pointer-events: none;
+}
+    header{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,rgba(11,14,20,.95),rgba(11,14,20,.7));backdrop-filter:saturate(140%) blur(8px);border-bottom:1px solid #1f2a3a}
+    .wrap{max-width:var(--wrap-w);margin:0 auto;padding-top: var(--header-pad-y);padding-bottom: var(--header-pad-y);padding:32px 24px}
+    .title{display:flex;gap:10px;align-items:center}
+    .title h1{font-size:32px;margin:0}         /* 標題字 32px（固定） */
+
+    nav{display:flex;flex-wrap:wrap;gap:8px;margin-top: var(--title-nav-gap)}
+    nav button{background:#0f172a;border:1px solid #253248;color:var(--muted);padding:8px 12px;border-radius:999px;cursor:pointer;font-size:16px}
+    nav button.active{color:#001812;background:var(--acc);border-color:transparent}
+
+    main{padding:18px 16px}
+    .tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+    .tools input,.tools select{background:#0f172a;border:1px solid #273347;color:var(--ink);padding:10px 12px;border-radius:10px}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid #24404a;background:#0b2826;color:#cee;padding:6px 10px;border-radius:999px;text-decoration:none}
+    .danger{background:#33141b;border-color:#612036}
+
+    /* ===== 卡片：高度固定，內容用 flex 撐開 ===== */
+    .card{background:var(--card);border:1px solid #1e293b;border-radius:16px;padding:14px;height:var(--card-h);display:flex;flex-direction:column;align-items: flex-start;justify-content: flex-start;gap: 6px; }
+    .card h3{margin:.2rem 0 .1rem;font-size:20px;line-height:1.25}  /* 稍加大但仍穩定 */
+    .meta{color:var(--muted);font-size:13px}
+    .tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #2a3a55;color:#a0b9d8;margin-right:6px}
+    .footer{color:#789;font-size:12px;margin-top:28px}
+    .badge{display:inline-block;margin-left:8px;font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid #2a3a55}
+    .badge-green{background:#0b2b1e;border-color:#1f5a3a;color:#a8f0c8}
+    .badge-yellow{background:#2b2b0b;border-color:#5a5a1f;color:#ffe08a}
+    .badge-blue{background:#0b2033;border-color:#204a6a;color:#9bd0ff}
+    .badge-red{background:#331014;border-color:#612036;color:#ff9aa2}
+    .empty{opacity:.8;border:1px dashed #2a3b5a;border-radius:14px;padding:20px;text-align:center}
+    a.link{color:var(--acc)}
+
+    /* ===== 版型 A：所有歌曲（每行兩首，等高）===== */
+    .grid-all{display:grid;gap:12px;grid-template-columns:1fr}
+    @media(min-width:680px){ .grid-all{grid-template-columns:repeat(2,1fr)} } /* 每行兩首 */
+
+    /* ===== 版型 B：歌手清單 + 單欄歌曲（每行一首，等高）===== */
+    .twoPane{display:grid;gap:16px}
+    @media(min-width:900px){.twoPane{grid-template-columns:280px 1fr}}
+    .pane-left{background:var(--card);border:1px solid #1e293b;border-radius:14px;padding:8px;max-height:72vh;overflow:auto}
+    .pane-right{display: grid;grid-template-columns: 1fr;gap: 12px;align-content: start;align-items: start;}
+    .artist-item{padding:10px 12px;border-radius:10px;cursor:pointer;color:var(--muted);display:flex;justify-content:space-between;align-items:center;font-size:16px} /* 歌手名 16px（固定） */
+    .artist-item:hover{background:#0f172a;color:var(--ink)}
+    .artist-item.active{background:var(--acc);color:#001812}
+    .artist-count{font-size:12px;opacity:.8}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="title">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 18V5l10-2v13" stroke="currentColor" stroke-width="1.5"/><circle cx="7" cy="18" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="17" cy="16" r="3" stroke="currentColor" stroke-width="1.5"/></svg>
+        <h1>拉米の歌單｜動態版</h1>
+      </div>
+      <nav id="tabs"></nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="tools">
+      <input id="search" type="search" placeholder="搜尋：歌名 / 歌手 / 備註 / 熟悉度 / 倍數" />
+      <select id="lenFilter">
+        <option value="">依歌名字數篩選（全部）</option>
+        <option value="1-4">1–4 字</option>
+        <option value="5-6">5–6 字</option>
+        <option value="7-8">7–8 字</option>
+        <option value="9+">9 字以上</option>
+      </select>
+      <a id="sheetLink" class="pill" target="_blank" rel="noopener">查看資料表</a>
+      <a class="pill danger" href="#" id="forceReload">立刻重整</a>
+    </div>
+
+    <div id="list"></div>
+    <div class="footer">資料來源：Apps Script Web App（每日自動更新；也可手動重整）。</div>
+  </main>
+
+  <script>
+  /* ========= 基本設定 ========= */
+  const CONFIG = {
+    GAS_URL: "https://script.google.com/macros/s/AKfycbxKRVJ6F3LBQeTLp4yW8h0m7WohmvHo0Nq43nWhX3uQuLluRMq9ih4N8ABrXQ7jRhN0hg/exec",
+    SHEET_VIEW_URL: "https://docs.google.com/spreadsheets/d/1dTPu4IdWgHgeHHhtPIh1-543fbGVl6LBU15WYFzhYRs/edit",
+    CATEGORY_TABS: ["所有歌曲","女歌手","男歌手","合唱","抖音歌","日文歌","英文歌","其他...","倍數歌單"]
+  };
+  const TABS = CONFIG.CATEGORY_TABS.slice();
+  let rows=[], filtered=[], activeTab=TABS[0], selectedArtist=null;
+
+  /* ========= JSONP 取資料（繞 CORS） ========= */
+  function jsonp(url, timeoutMs=15000){
+    return new Promise((resolve,reject)=>{
+      const cb="__jsonp__"+Math.random().toString(36).slice(2);
+      const s=document.createElement("script");
+      const sep=url.includes("?")?"&":"?";
+      s.src=url+sep+"callback="+cb;
+      const timer=setTimeout(()=>{cleanup();reject(new Error("JSONP timeout"))},timeoutMs);
+      function cleanup(){clearTimeout(timer);delete window[cb];s.remove();}
+      window[cb]=d=>{cleanup();resolve(d)};
+      s.onerror=()=>{cleanup();reject(new Error("JSONP network error"))};
+      document.head.appendChild(s);
+    });
+  }
+
+  function toStr(v){return v==null?"":String(v)}
+  function escapeHtml(s){s=toStr(s);return s.replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
+  function escapeAttr(s){return escapeHtml(s).replace(/"/g,"&quot;")}
+
+  function shuffle(a){
+    const arr=a.slice();
+    for(let i=arr.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+    return arr;
+  }
+
+  async function fetchSheet(){
+    try{
+      const data = await jsonp(CONFIG.GAS_URL);
+      const arr = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+      rows = arr.map(r => r.category!==undefined ? r : ({
+        category:r[0], title:r[1], artist:r[2], note:r[3],
+        url:r[4], updatedAt:r[5], familiarity:r[6], multiplier:r[7]
+      })).filter(x=>x && x.title);
+      applyFilters(true);                       // 初載清空選取
+    }catch(err){
+      console.error(err);
+      document.getElementById('list').innerHTML =
+        `<div class="empty">讀取失敗：${escapeHtml(err.message)}<br>請確認 Web App 為 /exec 且「任何人」可存取。</div>`;
+    }
+  }
+
+  function renderTabs(){
+    const nav=document.getElementById('tabs'); nav.innerHTML='';
+    TABS.forEach(cat=>{
+      const b=document.createElement('button');
+      b.textContent=cat;
+      b.className=(cat===activeTab?'active':'');
+      b.onclick=()=>{activeTab=cat;applyFilters(true)};
+      nav.appendChild(b);
+    });
+  }
+
+  function applyFilters(resetArtist=false){
+    const q = toStr(document.getElementById('search').value).trim().toLowerCase();
+    const len = document.getElementById('lenFilter').value;
+
+    let pool = rows.slice();
+    if (activeTab==='倍數歌單') {
+      pool = pool.filter(r => toStr(r.multiplier).toLowerCase()==='x2');
+    } else if (activeTab!=='所有歌曲') {
+      pool = pool.filter(r => r.category===activeTab);
+    }
+
+    if (q) pool = pool.filter(r=>{
+      const hay = (toStr(r.title)+' '+toStr(r.artist)+' '+toStr(r.note)+' '+toStr(r.familiarity)+' '+toStr(r.multiplier)).toLowerCase();
+      return hay.includes(q);
+    });
+
+    if (len){
+      pool = pool.filter(r=>{
+        const n=[...toStr(r.title)].length;
+        if(len==='1-4') return n>=1&&n<=4;
+        if(len==='5-6') return n>=5&&n<=6;
+        if(len==='7-8') return n>=7&&n<=8;
+        if(len==='9+')  return n>=9;
+        return true;
+      });
+    }
+
+    // 所有歌曲：每次都打亂順序
+    filtered = (activeTab==='所有歌曲') ? shuffle(pool) : pool;
+
+    if (resetArtist) selectedArtist=null;
+    const artistSet = new Set(filtered.map(r=>toStr(r.artist)||'（未填歌手）'));
+    if (selectedArtist && !artistSet.has(selectedArtist)) selectedArtist=null;
+
+    renderTabs();
+    renderList();
+  }
+
+  function renderList(){
+    const box=document.getElementById('list'); box.innerHTML='';
+
+    if (!filtered.length){
+      box.innerHTML = `<div class="empty">此分頁沒有資料或條件太嚴格 : )</div>`;
+      return;
+    }
+
+    if (activeTab==='所有歌曲' || activeTab==='倍數歌單'){
+      // 版型 A：所有歌曲（或倍數歌單也採兩欄）
+      const grid=document.createElement('div'); grid.className='grid-all';
+      filtered.forEach(r=> grid.appendChild(songCard(r)));
+      box.appendChild(grid);
+      return;
+    }
+
+    // 版型 B：歌手清單 + 單欄歌曲
+    const two=document.createElement('div'); two.className='twoPane';
+    const left=document.createElement('div'); left.className='pane-left';
+    const right=document.createElement('div'); right.className='pane-right';
+
+    // 左側歌手（依目前資料順序去重）
+    const seen=new Set();
+    filtered.forEach(r=>{
+      const name=toStr(r.artist)||'（未填歌手）';
+      if(seen.has(name)) return;
+      seen.add(name);
+      const count = filtered.filter(x=>toStr(x.artist)===toStr(r.artist)).length;
+      const item=document.createElement('div');
+      item.className='artist-item'+(name===selectedArtist?' active':'');
+      item.innerHTML=`<span>${escapeHtml(name)}</span><span class="artist-count">${count}</span>`;
+      item.onclick=()=>{
+        selectedArtist=name;
+        left.querySelectorAll('.artist-item').forEach(el=>el.classList.remove('active'));
+        item.classList.add('active');
+        renderSongsFor(right, name);
+      };
+      left.appendChild(item);
+    });
+
+    if (selectedArtist) renderSongsFor(right, selectedArtist);
+    else right.innerHTML=`<div class="empty">請在左側點選歌手查看歌曲</div>`;
+
+    two.appendChild(left); two.appendChild(right);
+    box.appendChild(two);
+  }
+
+  function renderSongsFor(container, artistName){
+    container.innerHTML='';
+    const list = filtered.filter(r => (toStr(r.artist)||'（未填歌手）')===artistName);
+    if (!list.length){ container.innerHTML=`<div class="empty">沒有符合的歌曲</div>`; return; }
+    list.forEach(r => container.appendChild(songCard(r)));  // 單欄、等高
+  }
+
+  function songCard(r){
+    const div=document.createElement('div');
+    div.className='card';
+    const link = r.url ? `<a class="link" href="${escapeAttr(r.url)}" target="_blank" rel="noopener">播放/連結</a>` : '';
+    const when = r.updatedAt ? new Date(r.updatedAt).toLocaleString() : '';
+    div.innerHTML = `
+      <div class="meta">
+        <span class="tag">${escapeHtml(r.category||'未分類')}</span>
+        ${r.familiarity ? `<span class="badge ${badgeClass(r.familiarity)}">${escapeHtml(r.familiarity)}</span>` : ''}
+        ${toStr(r.multiplier).toLowerCase()==='x2' ? `<span class="badge badge-red">x2</span>` : ''}
+      </div>
+      <h3>${escapeHtml(r.title)}</h3>
+      <div class="meta">${escapeHtml(r.artist||'')}</div>
+      <div class="meta" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
+        <span>${when? '更新：'+escapeHtml(when) : ''}</span>
+        <span>${link}</span>
+      </div>`;
+    return div;
+  }
+
+  function badgeClass(fam){
+    const f=toStr(fam);
+    if(/可點機掰版/.test(f)) return 'badge-green';
+    if(/^熟$/.test(f))        return 'badge-yellow';
+    if(/不熟/.test(f))        return 'badge-blue';
+    return '';
+  }
+
+  /* 綁事件 + 啟動 */
+  document.getElementById('search').addEventListener('input', ()=>applyFilters(true));
+  document.getElementById('lenFilter').addEventListener('change', ()=>applyFilters(true));
+  document.getElementById('forceReload').addEventListener('click', e=>{e.preventDefault();fetchSheet()});
+  document.getElementById('sheetLink').href = CONFIG.SHEET_VIEW_URL;
+
+  renderTabs();
+  fetchSheet();                     // 進站載入
+  setInterval(fetchSheet, 86400000);// 每日重抓一次
+  </script>
+</body>
+</html>
