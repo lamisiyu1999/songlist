@@ -123,7 +123,7 @@ body::after{
   const CONFIG = {
     GAS_URL: "https://script.google.com/macros/s/AKfycbxKRVJ6F3LBQeTLp4yW8h0m7WohmvHo0Nq43nWhX3uQuLluRMq9ih4N8ABrXQ7jRhN0hg/exec",
     SHEET_VIEW_URL: "https://docs.google.com/spreadsheets/d/1dTPu4IdWgHgeHHhtPIh1-543fbGVl6LBU15WYFzhYRs/edit",
-    CATEGORY_TABS: ["所有歌曲","女歌手","男歌手","合唱","抖音歌","日文歌","英文歌","其他...","倍數歌單"]
+    CATEGORY_TABS: ["所有歌曲","女歌手","男歌手","合唱","抖音歌","日文歌","英文歌","其他...","加倍歌單"]
   };
   const TABS = CONFIG.CATEGORY_TABS.slice();
   let rows=[], filtered=[], activeTab=TABS[0], selectedArtist=null;
@@ -190,7 +190,7 @@ body::after{
     const len = document.getElementById('lenFilter').value;
 
     let pool = rows.slice();
-    if (activeTab==='倍數歌單') {
+    if (activeTab==='加倍歌單') {
       pool = pool.filter(r => toStr(r.multiplier).toLowerCase()==='x2');
     } else if (activeTab!=='所有歌曲') {
       pool = pool.filter(r => r.category===activeTab);
@@ -231,7 +231,7 @@ body::after{
       return;
     }
 
-    if (activeTab==='所有歌曲' || activeTab==='倍數歌單'){
+    if (activeTab==='所有歌曲' || activeTab==='加倍歌單'){
       // 版型 A：所有歌曲（或倍數歌單也採兩欄）
       const grid=document.createElement('div'); grid.className='grid-all';
       filtered.forEach(r=> grid.appendChild(songCard(r)));
@@ -317,5 +317,6 @@ body::after{
   </script>
 </body>
 </html>
+
 
 
