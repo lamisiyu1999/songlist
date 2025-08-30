@@ -115,7 +115,7 @@ body::after{
     </div>
 
     <div id="list"></div>
-    <div class="footer">資料來源：Apps Script Web App（每日自動更新；也可手動重整）。</div>
+    <div class="footer">歡迎點歌:D 拉米正努力升級網頁中....。</div>
   </main>
 
   <script>
@@ -157,20 +157,22 @@ body::after{
   }
 
   async function fetchSheet(){
-    try{
-      const data = await jsonp(CONFIG.GAS_URL);
-      const arr = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
-      rows = arr.map(r => r.category!==undefined ? r : ({
-        category:r[0], title:r[1], artist:r[2], note:r[3],
-        url:r[4], updatedAt:r[5], familiarity:r[6], multiplier:r[7]
-      })).filter(x=>x && x.title);
-      applyFilters(true);                       // 初載清空選取
-    }catch(err){
-      console.error(err);
-      document.getElementById('list').innerHTML =
-        `<div class="empty">讀取失敗：${escapeHtml(err.message)}<br>請確認 Web App 為 /exec 且「任何人」可存取。</div>`;
-    }
+  try{
+    const url = CONFIG.GAS_URL + (CONFIG.GAS_URL.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+    const data = await jsonp(url);  // ⬅️ 用加過 cb 的 URL
+    const arr = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+    rows = arr.map(r => r.category!==undefined ? r : ({
+      category:r[0], title:r[1], artist:r[2], note:r[3],
+      url:r[4], updatedAt:r[5], familiarity:r[6], multiplier:r[7]
+    })).filter(x=>x && x.title);
+    applyFilters(true);
+  }catch(err){
+    console.error(err);
+    document.getElementById('list').innerHTML =
+      `<div class="empty">讀取失敗：${escapeHtml(err.message)}<br>請確認 Web App 為 /exec 且「任何人」可存取。</div>`;
   }
+}
+
 
   function renderTabs(){
     const nav=document.getElementById('tabs'); nav.innerHTML='';
@@ -315,4 +317,5 @@ body::after{
   </script>
 </body>
 </html>
+
 
