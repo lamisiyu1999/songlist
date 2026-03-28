@@ -173,7 +173,7 @@
 
     <!-- Grid 版型：所有歌曲 / 加倍歌單 / 其他... -->
     <div x-show="!loading && !error && isGridTab">
-      <div class="empty" x-show="filtered.length === 0">此分頁沒有資料或條件太嚴格 : )</div>
+      <div class="empty" x-show="filtered.length === 0">目前找不到這首歌喔！可以試試其他關鍵字，或是向拉米敲碗～</div>
       <div class="grid-all" x-show="filtered.length > 0">
         <template x-for="song in filtered" :key="song.title + song.artist">
           <div class="card" :class="pickedSong === song ? 'card-picked' : ''">
@@ -216,8 +216,9 @@
         </template>
       </div>
       <div class="pane-right">
-        <div class="empty" x-show="!selectedArtist">請在左側點選歌手查看歌曲</div>
-        <div class="empty" x-show="selectedArtist && songsForSelectedArtist.length === 0">沒有符合的歌曲</div>
+        <div class="empty" x-show="filtered.length === 0">目前找不到這首歌喔！可以試試其他關鍵字，或是向拉米敲碗～</div>
+        <div class="empty" x-show="filtered.length > 0 && !selectedArtist">請在左側點選歌手查看歌曲</div>
+        <div class="empty" x-show="selectedArtist && songsForSelectedArtist.length === 0">目前找不到這首歌喔！可以試試其他關鍵字，或是向拉米敲碗～</div>
         <template x-for="song in songsForSelectedArtist" :key="song.title + song.artist">
           <div class="card" :class="pickedSong === song ? 'card-picked' : ''">
             <div class="meta">
