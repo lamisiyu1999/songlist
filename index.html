@@ -107,6 +107,18 @@
     .card:hover .copy-bar{opacity:1}
     .copy-bar.copied{background:rgba(20,80,45,0.92);color:#8fc96e}
     .card{position:relative;overflow:hidden}
+
+    /* 隨機選歌按鈕（nav 內） */
+    nav .tab-lucky{background:#3a2d0a;border-color:#7a6030;color:#f0c060}
+    nav .tab-lucky:hover{background:#4a3d1a}
+
+    /* 被選中的卡片閃爍動畫 */
+    .card-picked{animation:pickFlash 1.5s ease forwards}
+    @keyframes pickFlash{
+      0%  {border-color:#f0c060;box-shadow:0 0 0 2px rgba(240,192,96,.5)}
+      50% {border-color:#f0c060;box-shadow:0 0 14px 4px rgba(240,192,96,.35)}
+      100%{border-color:#1e293b;box-shadow:none}
+    }
   </style>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -125,6 +137,7 @@
         <template x-for="tab in tabs" :key="tab">
           <button :class="tab === activeTab ? 'active' : ''" @click="setTab(tab)" x-text="tab"></button>
         </template>
+        <button class="tab-lucky" @click="luckyPick()" title="從目前歌單隨機抽一首">🎲 隨機</button>
       </nav>
     </div>
   </header>
@@ -163,7 +176,7 @@
       <div class="empty" x-show="filtered.length === 0">此分頁沒有資料或條件太嚴格 : )</div>
       <div class="grid-all" x-show="filtered.length > 0">
         <template x-for="song in filtered" :key="song.title + song.artist">
-          <div class="card">
+          <div class="card" :class="pickedSong === song ? 'card-picked' : ''">
             <div class="meta">
               <span class="tag" x-text="song.category || '未分類'"></span>
               <template x-for="tok in famTokens(song.familiarity)" :key="tok">
@@ -206,7 +219,7 @@
         <div class="empty" x-show="!selectedArtist">請在左側點選歌手查看歌曲</div>
         <div class="empty" x-show="selectedArtist && songsForSelectedArtist.length === 0">沒有符合的歌曲</div>
         <template x-for="song in songsForSelectedArtist" :key="song.title + song.artist">
-          <div class="card">
+          <div class="card" :class="pickedSong === song ? 'card-picked' : ''">
             <div class="meta">
               <span class="tag" x-text="song.category || '未分類'"></span>
               <template x-for="tok in famTokens(song.familiarity)" :key="tok">
@@ -285,6 +298,7 @@
       tabs: CONFIG.CATEGORY_TABS,
       sheetUrl: CONFIG.SHEET_VIEW_URL,
       copiedSong: null,
+      pickedSong: null,
 
       /* ── computed ── */
       get isGridTab() {
@@ -461,6 +475,20 @@
           this.copiedSong = song;
           setTimeout(() => { this.copiedSong = null; }, 800);
         }).catch(() => {});
+      },
+
+      luckyPick() {
+        if (!this.filtered.length) return;
+        const idx = Math.floor(Math.random() * this.filtered.length);
+        this.pickedSong = this.filtered[idx];
+        if (!this.isGridTab) {
+          this.selectedArtist = toStr(this.pickedSong.artist) || '（未填歌手）';
+        }
+        this.$nextTick(() => {
+          const el = document.querySelector('.card-picked');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        setTimeout(() => { this.pickedSong = null; }, 1500);
       },
     }));
   });
