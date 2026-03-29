@@ -78,6 +78,7 @@
     .badge-blue{background:#0b2033;border-color:#204a6a;color:#9bd0ff}
     .badge-violet{background:#1b0b2b;border-color:#4a1f5a;color:#d8a0ff}  /* 吉他可點 */
     .badge-tw{background:#0b1b2b;border-color:#1f4a6a;color:#a0d8ff}      /* 台語 */
+    .badge-gold{background:#3a2d0a;border-color:#7a6030;color:#f0c060}     /* 推薦 */
     .empty{opacity:.8;border:1px dashed #2a3b5a;border-radius:14px;padding:20px;text-align:center}
     a.link{color:var(--acc)}
 
@@ -187,6 +188,7 @@
           <div class="card" :class="pickedSong === song ? 'card-picked' : ''">
             <div class="meta">
               <span class="tag" x-text="song.category || '未分類'"></span>
+              <span class="badge badge-gold" x-show="song.isTop === 'TRUE'">⭐ 推薦</span>
               <template x-for="tok in famTokens(song.familiarity)" :key="tok">
                 <span class="badge" :class="badgeClass(tok)" x-text="tok"></span>
               </template>
@@ -231,6 +233,7 @@
           <div class="card" :class="pickedSong === song ? 'card-picked' : ''">
             <div class="meta">
               <span class="tag" x-text="song.category || '未分類'"></span>
+              <span class="badge badge-gold" x-show="song.isTop === 'TRUE'">⭐ 推薦</span>
               <template x-for="tok in famTokens(song.familiarity)" :key="tok">
                 <span class="badge" :class="badgeClass(tok)" x-text="tok"></span>
               </template>
@@ -395,7 +398,14 @@
           });
         }
 
-        this.filtered = (this.activeTab === '所有歌曲') ? shuffle(pool) : pool;
+        if (this.activeTab === '所有歌曲') {
+          const top = pool.filter(r => r.isTop === 'TRUE');
+          const rest = shuffle(pool.filter(r => r.isTop !== 'TRUE'));
+          this.filtered = [...top, ...rest];
+        } else {
+          pool.sort((a, b) => (b.isTop === 'TRUE' ? 1 : 0) - (a.isTop === 'TRUE' ? 1 : 0));
+          this.filtered = pool;
+        }
 
         if (resetArtist) {
           const artistSet = new Set(this.filtered.map(r => toStr(r.artist) || '（未填歌手）'));
@@ -438,12 +448,13 @@
       },
 
       async _doFetch() {
+        if (window.__MOCK_SONGS__) return window.__MOCK_SONGS__.filter(x => x && x.title);
         const url = CONFIG.GAS_URL + (CONFIG.GAS_URL.includes('?') ? '&' : '?') + 'cb=' + Date.now();
         const data = await jsonp(url);
         const arr = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
         return arr.map(r => r.category !== undefined ? r : ({
           category: r[0], title: r[1], artist: r[2], note: r[3],
-          url: r[4], updatedAt: r[5], familiarity: r[6], multiplier: r[7]
+          url: r[4], updatedAt: r[5], familiarity: r[6], multiplier: r[7], isTop: r[8]
         })).filter(x => x && x.title);
       },
 
