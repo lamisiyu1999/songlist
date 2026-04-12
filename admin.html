@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>歌單管理後台</title>
+  <style>
+    :root{
+      --bg:#0b0e14; --card:#121826; --muted:#9db2ce; --ink:#e6edf7; --acc:#a78bfa;
+      --danger:#e05c6e;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif;min-height:100vh}
+    [x-cloak]{display:none!important}
+
+    /* ── 驗證閘道 ── */
+    .auth-gate{display:flex;align-items:center;justify-content:center;min-height:100vh}
+    .auth-box{background:var(--card);border:1px solid #1e293b;border-radius:16px;padding:40px;width:340px;text-align:center}
+    .auth-box h1{font-size:22px;margin-bottom:24px}
+    .auth-box input{width:100%;padding:10px 14px;background:#0f172a;border:1px solid #273347;color:var(--ink);border-radius:10px;font-size:16px;margin-bottom:12px}
+    .auth-box button{width:100%;padding:12px;background:var(--acc);color:#001812;font-size:16px;font-weight:bold;border:none;border-radius:10px;cursor:pointer}
+    .auth-error{color:var(--danger);font-size:14px;margin-top:8px}
+
+    /* ── 版面 ── */
+    .admin-wrap{max-width:1200px;margin:0 auto;padding:24px}
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+    .page-header h1{font-size:24px}
+    .logout-btn{background:transparent;border:1px solid #253248;color:var(--muted);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px}
+    .logout-btn:hover{color:var(--ink)}
+
+    /* ── 分頁標籤 ── */
+    .tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid #1e293b}
+    .tab-btn{background:transparent;border:none;color:var(--muted);padding:10px 20px;cursor:pointer;font-size:16px;border-bottom:2px solid transparent;margin-bottom:-1px}
+    .tab-btn.active{color:var(--acc);border-bottom-color:var(--acc)}
+
+    /* ── 工具列 ── */
+    .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+    .toolbar input[type=search]{background:#0f172a;border:1px solid #273347;color:var(--ink);padding:9px 14px;border-radius:10px;font-size:15px;flex:1;min-width:200px}
+    .btn{padding:9px 18px;border-radius:10px;border:none;cursor:pointer;font-size:15px;font-weight:600}
+    .btn-primary{background:var(--acc);color:#001812}
+    .btn-danger{background:#33141b;border:1px solid #612036;color:#ff9aa2}
+    .btn-ghost{background:transparent;border:1px solid #253248;color:var(--muted)}
+    .btn-ghost:hover{color:var(--ink)}
+    .btn-sm{padding:5px 12px;font-size:13px;font-weight:500}
+
+    /* ── 新增/編輯表單 ── */
+    .form-panel{background:var(--card);border:1px solid #253248;border-radius:14px;padding:20px;margin-bottom:16px}
+    .form-panel h3{font-size:17px;margin-bottom:16px;color:var(--acc)}
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .form-field{display:flex;flex-direction:column;gap:5px}
+    .form-field label{font-size:13px;color:var(--muted)}
+    .form-field input,.form-field select{background:#0f172a;border:1px solid #273347;color:var(--ink);padding:8px 12px;border-radius:8px;font-size:14px}
+    .form-field.full{grid-column:1/-1}
+    .form-actions{display:flex;gap:10px;margin-top:16px}
+    .error-msg{color:var(--danger);font-size:13px;margin-top:6px}
+
+    /* ── 表格 ── */
+    .table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    thead th{text-align:left;padding:10px 12px;color:var(--muted);border-bottom:1px solid #1e293b;font-weight:600;white-space:nowrap}
+    tbody tr{border-bottom:1px solid #0f172a}
+    tbody tr:hover{background:#0f172a}
+    tbody td{padding:10px 12px;vertical-align:middle}
+    .tag-chip{display:inline-block;background:#0b2826;border:1px solid #24404a;color:#cee;padding:2px 8px;border-radius:999px;font-size:12px;margin:1px}
+    .color-dot{display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid #444;vertical-align:middle;margin-right:6px}
+    .action-btns{display:flex;gap:6px;white-space:nowrap}
+
+    /* ── 分頁 ── */
+    .pagination{display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap}
+    .pagination span{color:var(--muted);font-size:14px;margin-right:8px}
+    .page-btn{background:#0f172a;border:1px solid #253248;color:var(--muted);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:13px}
+    .page-btn.active{background:var(--acc);color:#001812;border-color:transparent}
+    .page-btn:disabled{opacity:.4;cursor:default}
+
+    /* ── Tag 核取方塊 ── */
+    .tag-checks{display:flex;flex-wrap:wrap;gap:6px;padding:6px 0}
+    .tag-check-item{display:flex;align-items:center;gap:4px;background:#0f172a;border:1px solid #273347;border-radius:999px;padding:4px 10px;cursor:pointer;font-size:13px}
+
+    /* ── 其他 ── */
+    .empty{color:var(--muted);text-align:center;padding:40px;font-size:15px}
+    .saving{opacity:.6;pointer-events:none}
+  </style>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body x-data="adminApp">
+
+  <!-- 驗證閘道 -->
+  <div class="auth-gate" x-show="!authed">
+    <div class="auth-box">
+      <h1>🔐 歌單管理後台</h1>
+      <input type="password" placeholder="輸入密碼" x-model="passwordInput"
+        @keydown.enter="login()" autofocus />
+      <button @click="login()" :disabled="loggingIn">
+        <span x-text="loggingIn ? '驗證中…' : '登入'"></span>
+      </button>
+      <div class="auth-error" x-show="authError" x-text="authError"></div>
+    </div>
+  </div>
+
+  <!-- 管理介面 -->
+  <div class="admin-wrap" x-show="authed" x-cloak>
+    <div class="page-header">
+      <h1>拉米の歌單管理</h1>
+      <button class="logout-btn" @click="logout()">登出</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn" :class="activeTab==='songs'?'active':''" @click="activeTab='songs'">歌曲管理</button>
+      <button class="tab-btn" :class="activeTab==='tags'?'active':''" @click="activeTab='tags'">Tag 管理</button>
+    </div>
+
+    <!-- 歌曲 Tab -->
+    <div x-show="activeTab==='songs'">
+      <p class="empty" x-show="songsLoading">載入中…</p>
+      <div x-show="!songsLoading">
+        <div class="toolbar">
+          <input type="search" placeholder="搜尋歌名 / 歌手 / 分類 / Tag" x-model="songSearch" />
+          <button class="btn btn-primary" @click="openSongForm(null)">+ 新增歌曲</button>
+        </div>
+
+        <!-- 新增/編輯表單 -->
+        <div x-show="showSongForm" class="form-panel">
+          <h3 x-text="editingSong ? '編輯歌曲' : '新增歌曲'"></h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>歌名 *</label>
+              <input type="text" x-model="songForm.title" placeholder="必填" />
+            </div>
+            <div class="form-field">
+              <label>歌手</label>
+              <input type="text" x-model="songForm.artist" />
+            </div>
+            <div class="form-field">
+              <label>分類</label>
+              <select x-model="songForm.category">
+                <option value="">（未分類）</option>
+                <option>女歌手</option><option>男歌手</option><option>合唱</option>
+                <option>抖音歌</option><option>日文歌</option><option>英文歌</option><option>其他...</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>加倍</label>
+              <select x-model="songForm.multiplier">
+                <option value="">無</option>
+                <option value="x2">x2 雙倍</option>
+                <option value="x3">x3 三倍</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>備註</label>
+              <input type="text" x-model="songForm.note" />
+            </div>
+            <div class="form-field">
+              <label>連結</label>
+              <input type="url" x-model="songForm.url" placeholder="https://..." />
+            </div>
+            <div class="form-field">
+              <label>
+                <input type="checkbox" x-model="songForm.isTop" />
+                ⭐ 推薦
+              </label>
+            </div>
+            <div class="form-field full">
+              <label>Tag（可多選）</label>
+              <div class="tag-checks">
+                <template x-for="tag in tags" :key="tag.name">
+                  <label class="tag-check-item">
+                    <input type="checkbox"
+                      :checked="songForm.tags.includes(tag.name)"
+                      @change="toggleSongTag(tag.name)" />
+                    <span x-text="tag.name"></span>
+                  </label>
+                </template>
+                <span x-show="tags.length === 0" style="color:var(--muted);font-size:13px">
+                  （尚無 tag，請先在 Tag 管理新增）
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="error-msg" x-show="songSaveError" x-text="songSaveError"></div>
+          <div class="form-actions">
+            <button class="btn btn-primary" @click="saveSong()" :class="saving?'saving':''">
+              <span x-text="saving ? '儲存中…' : '儲存'"></span>
+            </button>
+            <button class="btn btn-ghost" @click="closeSongForm()">取消</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="empty" x-show="pagedSongs.length === 0">找不到歌曲</div>
+          <table x-show="pagedSongs.length > 0">
+            <thead>
+              <tr>
+                <th>歌名</th><th>歌手</th><th>分類</th><th>Tag</th><th>加倍</th><th>推薦</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="song in pagedSongs" :key="song.rowIndex">
+                <tr>
+                  <td x-text="song.title"></td>
+                  <td x-text="song.artist"></td>
+                  <td x-text="song.category"></td>
+                  <td>
+                    <template x-for="t in (song.tags||[])" :key="t">
+                      <span class="tag-chip" x-text="t"></span>
+                    </template>
+                  </td>
+                  <td x-text="song.multiplier"></td>
+                  <td x-text="song.isTop==='TRUE'?'⭐':''"></td>
+                  <td class="action-btns">
+                    <button class="btn btn-ghost btn-sm" @click="openSongForm(song)">✏️ 編輯</button>
+                    <button class="btn btn-danger btn-sm" @click="deleteSong(song)">🗑️ 刪除</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" x-show="totalSongPages > 1">
+          <span x-text="'共 ' + filteredSongs.length + ' 首'"></span>
+          <button class="page-btn" @click="songPage--" :disabled="songPage === 1">←</button>
+          <template x-for="p in songPageNumbers" :key="p">
+            <button class="page-btn" :class="p===songPage?'active':''" @click="songPage=p" x-text="p"></button>
+          </template>
+          <button class="page-btn" @click="songPage++" :disabled="songPage === totalSongPages">→</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tag Tab -->
+    <div x-show="activeTab==='tags'">
+      <p class="empty" x-show="tagsLoading">載入中…</p>
+      <div x-show="!tagsLoading">
+        <div class="toolbar">
+          <input type="search" placeholder="搜尋 Tag 名稱" x-model="tagSearch" />
+          <button class="btn btn-primary" @click="openTagForm(null)">+ 新增 Tag</button>
+        </div>
+
+        <div x-show="showTagForm" class="form-panel">
+          <h3 x-text="editingTag ? '編輯 Tag' : '新增 Tag'"></h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Tag 名稱 *</label>
+              <input type="text" x-model="tagForm.name" placeholder="必填" />
+            </div>
+            <div class="form-field">
+              <label>顏色</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="color" x-model="tagForm.color"
+                  style="width:44px;height:36px;padding:2px;border-radius:6px;border:1px solid #273347;background:#0f172a;cursor:pointer" />
+                <input type="text" x-model="tagForm.color" placeholder="#a78bfa"
+                  style="flex:1;background:#0f172a;border:1px solid #273347;color:var(--ink);padding:8px 12px;border-radius:8px;font-size:14px" />
+              </div>
+            </div>
+          </div>
+          <div class="error-msg" x-show="tagSaveError" x-text="tagSaveError"></div>
+          <div class="form-actions">
+            <button class="btn btn-primary" @click="saveTag()" :class="saving?'saving':''">
+              <span x-text="saving ? '儲存中…' : '儲存'"></span>
+            </button>
+            <button class="btn btn-ghost" @click="closeTagForm()">取消</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="empty" x-show="filteredTags.length === 0">找不到 Tag</div>
+          <table x-show="filteredTags.length > 0">
+            <thead>
+              <tr><th>Tag 名稱</th><th>顏色</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <template x-for="tag in filteredTags" :key="tag.rowIndex">
+                <tr>
+                  <td x-text="tag.name"></td>
+                  <td>
+                    <span class="color-dot" :style="tag.color ? 'background:'+tag.color : ''"></span>
+                    <span x-text="tag.color || '（無）'"></span>
+                  </td>
+                  <td class="action-btns">
+                    <button class="btn btn-ghost btn-sm" @click="openTagForm(tag)">✏️ 編輯</button>
+                    <button class="btn btn-danger btn-sm" @click="deleteTag(tag)">🗑️ 刪除</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxKOKxd5kFVdiXbqT3sV6ImlOawE__o0L-99Sns0n9s2Z0iPVIrGZxGexCWJU9HRrMC/exec";
+
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('adminApp', () => ({
+      /* ── 驗證 ── */
+      authed: false,
+      passwordInput: '',
+      loggingIn: false,
+      authError: '',
+
+      /* ── 標籤 ── */
+      activeTab: 'songs',
+
+      /* ── 歌曲 ── */
+      songs: [],
+      songsLoading: false,
+      songSearch: '',
+      songPage: 1,
+      songPageSize: 100,
+      showSongForm: false,
+      editingSong: null,
+      songForm: { category:'', title:'', artist:'', note:'', url:'', tags:[], multiplier:'', isTop:false },
+      songSaveError: '',
+
+      /* ── Tag ── */
+      tags: [],
+      tagsLoading: false,
+      tagSearch: '',
+      showTagForm: false,
+      editingTag: null,
+      tagForm: { name: '', color: '' },
+      tagSaveError: '',
+
+      /* ── 共用 ── */
+      saving: false,
+
+      /* ── 計算屬性 ── */
+      get filteredSongs() {
+        const q = this.songSearch.trim().toLowerCase();
+        if (!q) return this.songs;
+        return this.songs.filter(s => {
+          const hay = [s.title, s.artist, s.category, ...(s.tags||[])].join(' ').toLowerCase();
+          return hay.includes(q);
+        });
+      },
+      get totalSongPages() {
+        return Math.max(1, Math.ceil(this.filteredSongs.length / this.songPageSize));
+      },
+      get pagedSongs() {
+        const start = (this.songPage - 1) * this.songPageSize;
+        return this.filteredSongs.slice(start, start + this.songPageSize);
+      },
+      get songPageNumbers() {
+        return Array.from({ length: this.totalSongPages }, (_, i) => i + 1);
+      },
+      get filteredTags() {
+        const q = this.tagSearch.trim().toLowerCase();
+        if (!q) return this.tags;
+        return this.tags.filter(t => t.name.toLowerCase().includes(q));
+      },
+
+      /* ── 初始化 ── */
+      init() {
+        this.$watch('songSearch', () => { this.songPage = 1; });
+        const stored = sessionStorage.getItem('admin_authed');
+        if (stored) this._verifyStored(stored);
+      },
+
+      async _verifyStored(pw) {
+        try {
+          const res = await this._post('auth', {}, pw);
+          if (res.ok) {
+            this.passwordInput = pw;
+            this.authed = true;
+            this._loadAll();
+          } else {
+            sessionStorage.removeItem('admin_authed');
+          }
+        } catch (e) {
+          sessionStorage.removeItem('admin_authed');
+        }
+      },
+
+      /* ── 驗證方法 ── */
+      async login() {
+        this.authError = '';
+        this.loggingIn = true;
+        try {
+          const res = await this._post('auth', {}, this.passwordInput);
+          if (res.ok) {
+            sessionStorage.setItem('admin_authed', this.passwordInput);
+            this.authed = true;
+            this._loadAll();
+          } else {
+            this.authError = '密碼錯誤';
+          }
+        } catch (e) {
+          this.authError = '連線失敗：' + e.message;
+        } finally {
+          this.loggingIn = false;
+        }
+      },
+
+      logout() {
+        sessionStorage.removeItem('admin_authed');
+        this.authed = false;
+        this.passwordInput = '';
+        this.songs = [];
+        this.tags = [];
+      },
+
+      /* ── 資料抓取 ── */
+      _loadAll() {
+        this.fetchSongs();
+        this.fetchTags();
+      },
+
+      async fetchSongs() {
+        this.songsLoading = true;
+        try {
+          const resp = await fetch(GAS_URL + '?cb=' + Date.now(), { credentials: 'omit' });
+          const arr = await resp.json();
+          this.songs = Array.isArray(arr) ? arr.filter(x => x && x.title) : [];
+        } catch (e) {
+          this.songs = [];
+        } finally {
+          this.songsLoading = false;
+        }
+      },
+
+      async fetchTags() {
+        this.tagsLoading = true;
+        try {
+          const resp = await fetch(GAS_URL + '?type=tags&cb=' + Date.now(), { credentials: 'omit' });
+          this.tags = await resp.json();
+        } catch (e) {
+          this.tags = [];
+        } finally {
+          this.tagsLoading = false;
+        }
+      },
+
+      /* ── 共用 POST ── */
+      async _post(action, data, pw) {
+        const password = pw !== undefined ? pw : (sessionStorage.getItem('admin_authed') || '');
+        const resp = await fetch(GAS_URL, {
+          method: 'POST',
+          credentials: 'omit',
+          body: JSON.stringify({ password, action, data })
+        });
+        return resp.json();
+      },
+
+      /* ── 歌曲表單方法 ── */
+      openSongForm(song) {
+        this.editingSong = song;
+        if (song) {
+          this.songForm = {
+            category:   song.category   || '',
+            title:      song.title      || '',
+            artist:     song.artist     || '',
+            note:       song.note       || '',
+            url:        song.url        || '',
+            tags:       [...(song.tags  || [])],
+            multiplier: song.multiplier || '',
+            isTop:      song.isTop === 'TRUE',
+          };
+        } else {
+          this.songForm = { category:'', title:'', artist:'', note:'', url:'', tags:[], multiplier:'', isTop:false };
+        }
+        this.songSaveError = '';
+        this.showSongForm = true;
+      },
+
+      closeSongForm() {
+        this.showSongForm = false;
+        this.editingSong = null;
+      },
+
+      toggleSongTag(tagName) {
+        const idx = this.songForm.tags.indexOf(tagName);
+        if (idx === -1) this.songForm.tags.push(tagName);
+        else this.songForm.tags.splice(idx, 1);
+      },
+
+      async saveSong() {
+        if (!this.songForm.title.trim()) {
+          this.songSaveError = '歌名不能為空';
+          return;
+        }
+        this.saving = true;
+        this.songSaveError = '';
+        try {
+          const action = this.editingSong ? 'editSong' : 'addSong';
+          const data = {
+            ...this.songForm,
+            isTop: this.songForm.isTop ? 'TRUE' : '',
+            ...(this.editingSong ? { rowIndex: this.editingSong.rowIndex } : {})
+          };
+          const res = await this._post(action, data);
+          if (!res.ok) throw new Error(res.error || '儲存失敗');
+          await this.fetchSongs();
+          this.closeSongForm();
+        } catch (e) {
+          this.songSaveError = e.message;
+        } finally {
+          this.saving = false;
+        }
+      },
+
+      async deleteSong(song) {
+        if (!confirm(`確定要刪除「${song.title}」嗎？此操作無法復原。`)) return;
+        this.saving = true;
+        try {
+          const res = await this._post('deleteSong', { rowIndex: song.rowIndex });
+          if (!res.ok) throw new Error(res.error || '刪除失敗');
+          await this.fetchSongs();
+        } catch (e) {
+          alert('刪除失敗：' + e.message);
+        } finally {
+          this.saving = false;
+        }
+      },
+
+      /* ── Tag 表單方法 ── */
+      openTagForm(tag) {
+        this.editingTag = tag;
+        this.tagForm = tag
+          ? { name: tag.name, color: tag.color || '' }
+          : { name: '', color: '' };
+        this.tagSaveError = '';
+        this.showTagForm = true;
+      },
+
+      closeTagForm() {
+        this.showTagForm = false;
+        this.editingTag = null;
+      },
+
+      async saveTag() {
+        if (!this.tagForm.name.trim()) {
+          this.tagSaveError = 'Tag 名稱不能為空';
+          return;
+        }
+        this.saving = true;
+        this.tagSaveError = '';
+        try {
+          const action = this.editingTag ? 'editTag' : 'addTag';
+          const data = {
+            name:  this.tagForm.name.trim(),
+            color: this.tagForm.color,
+            ...(this.editingTag ? { rowIndex: this.editingTag.rowIndex } : {})
+          };
+          const res = await this._post(action, data);
+          if (!res.ok) throw new Error(res.error || '儲存失敗');
+          await this.fetchTags();
+          this.closeTagForm();
+        } catch (e) {
+          this.tagSaveError = e.message;
+        } finally {
+          this.saving = false;
+        }
+      },
+
+      async deleteTag(tag) {
+        if (!confirm(`確定要刪除 Tag「${tag.name}」嗎？`)) return;
+        this.saving = true;
+        try {
+          const res = await this._post('deleteTag', { rowIndex: tag.rowIndex });
+          if (!res.ok) throw new Error(res.error || '刪除失敗');
+          await this.fetchTags();
+        } catch (e) {
+          alert('刪除失敗：' + e.message);
+        } finally {
+          this.saving = false;
+        }
+      },
+    }));
+  });
+  </script>
+  <div style="text-align:center;color:#789;font-size:12px;margin:28px 0 16px">Copyright &copy; 2026 natz35609 時朔. All rights reserved.</div>
+</body>
+</html>
